@@ -9,13 +9,13 @@ This lib enables TDOA localization with RTL-SDRs, when a reference transmitter i
 
 
 ## Usage
-*rtl_sdr -f <frequency 1> -h <frequency 2> -n <num_samples> <out_filename>*
+*rtl_sdr -f <frequency 1> -h <frequency 2> -n <num_samples frequency 1> -m <num_samples frequency 2> <out_filename>*
 
 receives first <num_samples> IQ samples at <frequency 1> (in Hz), then <num_samples> IQ samples at <frequency 2>, then again <num_samples> at <frequency 1> without interruption. For help and more options type *rtl_sdr*.
 
 Example Usage:
-*rtl_sdr -f 200e6 -h 100e6 -n 1e3 record.dat*
-receives first 1000 IQ samples at 200 MHz, then 1000 IQ samples at 100 MHz, then again 1000 at 200 MHz without interruption, resulting in 3000 samples in total.
+*rtl_sdr -f 200e6 -h 100e6 -n 1e3 -m 1e4 record.dat*
+receives first 1000 IQ samples at 200 MHz, then 10000 IQ samples at 100 MHz without interruption, resulting in 11000 samples in total.
 
 
 ## Build Instructions
