@@ -66,15 +66,15 @@ void usage(void)
 		"2-Frequency-Mode for TDOA by DC9ST, 2017\n\n"
 		"receives n1+n2 IQ samples:\n"
 		"first n1 at frequency 1, then n2 at frequency 2\n\n"
-		"Usage:\t-f1 frequency_to_tune_to frequency 1/reference [Hz]\n"
-		"\t-f2 frequency_to_tune_to frequency 2/measure [Hz]\n"
+		"Usage:\t-f frequency_to_tune_to frequency 1/reference [Hz]\n"
+		"\t-h frequency_to_tune_to frequency 2/measure [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
-		"\t[-n1 number n of IQ samples to read for frequency 1 (total length = n1 + n2)(default: 2e6)]\n"
-		"\t[-n2 number n of IQ samples to read for frequency 2 (total length = n1 + n2)(default: 2e6)]\n"
+		"\t[-n number n of IQ samples to read for frequency 1 (total length = n1 + n2)(default: 2e6)]\n"
+		"\t[-m number n of IQ samples to read for frequency 2 (total length = n1 + n2)(default: 2e6)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
@@ -148,16 +148,16 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-	while ((opt = getopt(argc, argv, "d:f1:f2:g:s:b:n1:n2:p:S")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:h:g:s:b:n:m:p:S")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
 			dev_given = 1;
 			break;
-		case 'f1':
+		case 'f':
 			frequency1 = (uint32_t)atofs(optarg);
 			break;
-		case 'f2':
+		case 'h':
 			frequency2 = (uint32_t)atofs(optarg);
 			break;
 		case 'g':
@@ -172,16 +172,17 @@ int main(int argc, char **argv)
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
 			break;
-		case 'n1':
+		case 'n':
 			bytes_to_read_for_freq_1 = (uint32_t)atof(optarg) * 2;
 			break;
-		case 'n2':
+		case 'm':
 			bytes_to_read_for_freq_2 = (uint32_t)atof(optarg) * 2;
 			break;
 		case 'S':
 			sync_mode = 1;
 			break;
 		default:
+			fprintf(stderr, "Invalid argument provided\n");
 			usage();
 			break;
 		}
@@ -189,6 +190,7 @@ int main(int argc, char **argv)
 	bytes_to_read = bytes_to_read_for_freq_1 + bytes_to_read_for_freq_2;
 
 	if (argc <= optind) {
+		fprintf(stderr, "Output file not provided\n");
 		usage();
 	} else {
 		filename = argv[optind];
