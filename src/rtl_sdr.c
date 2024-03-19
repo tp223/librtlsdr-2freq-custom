@@ -23,6 +23,7 @@
    main changes:
    samples 3n IQ samples: first n at frequency f, then n at freuqency h and then again n at frequency f
 */
+/* Further modified to allow number of samples to be set per frequency from changes made by DC9ST */
 
 #include <errno.h>
 #include <signal.h>
@@ -48,11 +49,11 @@
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
-static uint32_t bytes_to_read_per_freq = 2000000 * 2;
-static uint32_t bytes_to_read = 6000000 * 2; // sum of i and q samples
+static uint32_t bytes_to_read_for_freq_1 = 2000000 * 2;
+static uint32_t bytes_to_read_for_freq_2 = 2000000 * 2;
+static uint32_t bytes_to_read = 2000000 * 4; // sum of i and q samples
 static rtlsdr_dev_t *dev = NULL;
 static int frequency_changed = 0;
-static int frequency_changed_back = 0;
 uint32_t frequency1 = 100000000;
 uint32_t frequency2 = 100000000;
 
@@ -63,16 +64,17 @@ void usage(void)
 		"\n"
 		"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n"
 		"2-Frequency-Mode for TDOA by DC9ST, 2017\n\n"
-		"receives 3xn IQ samples:\n"
-		"first n at frequency 1, then n at frequency 2, then n at frequency 1 again\n\n"
-		"Usage:\t-f frequency_to_tune_to frequency 1/reference [Hz]\n"
-		"\t-h frequency_to_tune_to frequency 2/measure [Hz]\n"
+		"receives n1+n2 IQ samples:\n"
+		"first n1 at frequency 1, then n2 at frequency 2\n\n"
+		"Usage:\t-f1 frequency_to_tune_to frequency 1/reference [Hz]\n"
+		"\t-f2 frequency_to_tune_to frequency 2/measure [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
-		"\t[-n number n of IQ samples to read per frequency (total length = 3x specified)(default: 2e6)]\n"
+		"\t[-n1 number n of IQ samples to read for frequency 1 (total length = n1 + n2)(default: 2e6)]\n"
+		"\t[-n2 number n of IQ samples to read for frequency 2 (total length = n1 + n2)(default: 2e6)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
@@ -120,17 +122,10 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 			bytes_to_read -= len;
 			
 			//switch to frequency 2
-			if ((bytes_to_read < bytes_to_read_per_freq*2) && (frequency_changed == 0)) {
+			if ((bytes_to_read < bytes_to_read_for_freq_2) && (frequency_changed == 0)) {
 				verbose_set_frequency(dev, frequency2);
 				frequency_changed = 1;
 			}
-			
-			// switch back to frequency 1 again
-			if ((bytes_to_read < bytes_to_read_per_freq) && (frequency_changed_back == 0)) {
-				verbose_set_frequency(dev, frequency1);
-				frequency_changed_back = 1;
-			}
-
 		}
 	}
 }
@@ -153,16 +148,16 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-	while ((opt = getopt(argc, argv, "d:f:h:g:s:b:n:p:S")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f1:f2:g:s:b:n1:n2:p:S")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
 			dev_given = 1;
 			break;
-		case 'f':
+		case 'f1':
 			frequency1 = (uint32_t)atofs(optarg);
 			break;
-		case 'h':
+		case 'f2':
 			frequency2 = (uint32_t)atofs(optarg);
 			break;
 		case 'g':
@@ -177,9 +172,11 @@ int main(int argc, char **argv)
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
 			break;
-		case 'n':
-			bytes_to_read_per_freq = (uint32_t)atof(optarg) * 2;
-			bytes_to_read = bytes_to_read_per_freq * 3; // three recordings with different frequencies
+		case 'n1':
+			bytes_to_read_for_freq_1 = (uint32_t)atof(optarg) * 2;
+			break;
+		case 'n2':
+			bytes_to_read_for_freq_2 = (uint32_t)atof(optarg) * 2;
 			break;
 		case 'S':
 			sync_mode = 1;
@@ -189,6 +186,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	bytes_to_read = bytes_to_read_for_freq_1 + bytes_to_read_for_freq_2;
 
 	if (argc <= optind) {
 		usage();
