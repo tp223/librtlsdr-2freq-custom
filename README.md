@@ -1,4 +1,5 @@
 # librtlsdr for 2-Frequency-Reception
+Extended functionality from https://github.com/DC9ST/librtlsdr-2freq
 
 ## Description
 Modified librtlsdr (*rtl_sdr* command) to enable seamless switching of frequency during reception.
@@ -26,5 +27,3 @@ receives first 1000 IQ samples at 200 MHz, then 10000 IQ samples at 100 MHz with
 5. *make*
 
 binaries (rtl_sdr) can then be found in build/src/
-
-DC9ST, 2017-2019
